@@ -8,6 +8,8 @@ import { Helmet } from "react-helmet";
 import { Notyf } from "notyf";
 import "notyf/notyf.min.css";
 import axios from "axios";
+import { clearServiceCart, removeFromServiceCart } from "../../store/reducers/serviceCartSlice";
+import { useSelector, useDispatch } from "react-redux";
 
 function ServiceCart() {
   const notyf = new Notyf({
@@ -17,12 +19,11 @@ function ServiceCart() {
     },
   });
 
-  const [carts, setCarts] = useState([]);
   const [total, setTotal] = useState(0);
   const navigate = useNavigate();
   const [name, setName] = useState("");
   const [id_user, setId_user] = useState(null);
-  const [ArrayUser, setArrayUser] = useState(null);
+  const [ArrayUser, setArrayUser] = useState([]);
   const [phone, setPhone] = useState("");
   const [email, setEmail] = useState("");
   const [appointmentDate, setAppointmentDate] = useState("");
@@ -30,53 +31,42 @@ function ServiceCart() {
   const [time2, setTime2] = useState("");
   const [errors, setErrors] = useState({});
 
-  useEffect(() => {
-    const storedCarts = localStorage.getItem("cart");
-    const cartData = storedCarts ? JSON.parse(storedCarts) : [];
-    setCarts(cartData);
-    TongTien(cartData);
-    GetAllStaff();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  const services = useSelector((state) => state.serviceCart.items);
+  const dispatch = useDispatch();
 
-  const TongTien = (cart) => {
-    const ThanhTien = cart.reduce((acc, item) => acc + item.price, 0);
+  const handleRemoveService = (id) => {
+    dispatch(removeFromServiceCart(id));
+  };
+
+  const TongTien = () => {
+    const subtotal = services.reduce((sum, service) => sum + service.price * service.quantity, 0);
+    const shippingFee = subtotal > 500000 ? 0 : 30000;
+    const ThanhTien = subtotal + shippingFee;
     setTotal(ThanhTien);
   };
 
-  const deleteItem = (id) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa sản phẩm này không?")) {
-      const updatedCarts = carts.filter((item) => item.id !== id);
-      setCarts(updatedCarts);
-      localStorage.setItem("cart", JSON.stringify(updatedCarts));
-      TongTien(updatedCarts);
-    }
-  };
+  useEffect(() => {
+    TongTien();
+  }, [services]);
 
   const validateForm = () => {
     const newErrors = {};
-
-    if (name.trim().length < 3) newErrors.name = "Chưa nhập đúng thông tin..";
-    if (!/^0\d{9,11}$/.test(phone)) {
-      newErrors.phone = "Chưa nhập đúng thông tin.";
-    }
+    if (name.trim().length < 3) newErrors.name = "Chưa nhập đúng thông tin.";
+    if (!/^0\d{9,11}$/.test(phone)) newErrors.phone = "Chưa nhập đúng thông tin.";
     if (!email.includes("@")) newErrors.email = "Email phải chứa ký tự '@'.";
     if (!appointmentDate) {
       newErrors.appointmentDate = "Vui lòng chọn ngày đến.";
     } else if (new Date(appointmentDate) < new Date()) {
       newErrors.appointmentDate = "Ngày đến không được ở trong quá khứ.";
     }
-    if (!time) {
-      newErrors.time = "Vui lòng chọn giờ đến.";
-    }
+    if (!time) newErrors.time = "Vui lòng chọn giờ đến.";
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleFormSubmit = (e) => {
+  const handleFormSubmit = async (e) => {
     e.preventDefault();
     if (validateForm()) {
-      // Lưu thông tin lịch hẹn vào localStorage
       const appointment = {
         id_user,
         name,
@@ -86,12 +76,11 @@ function ServiceCart() {
       };
       localStorage.setItem("appointment", JSON.stringify(appointment));
 
-      let ids = JSON.parse(localStorage.getItem("cart")).map((item) => item.id);
-      AddNewOrder(
-        Object.assign(JSON.parse(localStorage.getItem("appointment")), {
-          service: ids,
-        })
-      );
+      const ids = services.map((item) => item.id);
+      await AddNewOrder({
+        ...appointment,
+        service: ids,
+      });
     }
   };
 
@@ -101,38 +90,28 @@ function ServiceCart() {
       setTime(formattedDateTime);
     }
   }, [appointmentDate, time2]);
+
   const focusTime = (e) => {
     const selectedTime = e.target.value;
     const currentSeconds = new Date().getSeconds().toString().padStart(2, "0");
-    const [hours, minutes] = selectedTime.split(":");
-
-    setTime2(`${hours}:${minutes}:${currentSeconds}`);
+    setTime2(`${selectedTime}:${currentSeconds}`);
   };
 
-  const GetAllStaff = async () => {
-    try {
-      const response = await axios.get(`${import.meta.env.VITE_API_URL}/staff`);
-      setArrayUser(response?.data?.data);
-    } catch (error) {
-      console.error("Lỗi khi gọi API:", error);
-      notyf.error("Có lỗi xảy ra khi tải dữ liệu.");
-    }
-  };
   const handleSelectChange = (event) => {
     setId_user(event.target.value);
   };
+
   const AddNewOrder = async (DataOrder) => {
-    console.log(DataOrder);
     try {
       const response = await axios.post(`${import.meta.env.VITE_API_URL}/bookings`, DataOrder, {
         headers: {
           "Content-Type": "application/json",
         },
       });
-      console.log(response);
       notyf.success("Đặt lịch hẹn thành công!");
-      setCarts([]);
-      localStorage.removeItem("cart");
+
+      dispatch(clearServiceCart());
+
       setTimeout(() => {
         navigate("/");
       }, 9000);
@@ -141,7 +120,6 @@ function ServiceCart() {
       notyf.error("Có lỗi xảy ra khi tải dữ liệu.");
     }
   };
-
 
   return (
     <>
@@ -152,7 +130,7 @@ function ServiceCart() {
       <Header />
       <Container className="my-5 mb-5">
         <h4 className="mb-4">Đặt lịch của bạn</h4>
-        {carts.length === 0 ? (
+        {services.length === 0 ? (
           <h4 className="text-danger text-center">Bạn chưa có lịch hẹn nào </h4>
         ) : (
           <Row>
@@ -167,22 +145,18 @@ function ServiceCart() {
                   </tr>
                 </thead>
                 <tbody>
-                  {carts.map((item, index) => (
+                  {services.map((item, index) => (
                     <tr key={index}>
                       <td className="d-flex justify-content-center align-items-center">
                         <img
                           src={item.image ? `${import.meta.env.VITE_URL}${item.image}` : "path/to/default-image.jpg"}
-                          style={{
-                            width: "100px",
-                            height: "100px",
-                            objectFit: "cover",
-                          }}
+                          style={{ width: "100px", height: "100px", objectFit: "cover" }}
                           alt={item.name}
                         />
                       </td>
                       <td>{item.name}</td>
                       <td>
-                        <Button variant="outline-danger" onClick={() => deleteItem(item.id)} className="ms-3">
+                        <Button variant="outline-danger" onClick={() => handleRemoveService(item.id)} className="ms-3">
                           <i className="bi bi-trash" />
                         </Button>
                       </td>
@@ -233,7 +207,7 @@ function ServiceCart() {
                     <Col xs={6}>
                       <Form.Group className="mb-3">
                         <Form.Label>Thời gian đến</Form.Label>
-                        <Form.Control type="time" value={time2} onChange={(e) => focusTime(e)} isInvalid={!!errors.time2} />
+                        <Form.Control type="time" value={time2} onChange={focusTime} isInvalid={!!errors.time} />
                         <Form.Control.Feedback type="invalid">{errors.time}</Form.Control.Feedback>
                       </Form.Group>
                     </Col>
@@ -244,25 +218,6 @@ function ServiceCart() {
                         <Form.Control.Feedback type="invalid">{errors.appointmentDate}</Form.Control.Feedback>
                       </Form.Group>
                     </Col>
-                    <Form.Group className="mb-3">
-                      <Form.Label>Yêu cầu kĩ thuật viên *</Form.Label>
-                      <Form.Select aria-label="Chọn kĩ thuật viên" placeholder="Yêu cầu kĩ thuật viên" value={id_user} onChange={handleSelectChange}>
-                        <optgroup label="Thợ tóc tiệm đề xuất">
-                          <option value="Tiệm Đề Xuất">Tiệm Đề Xuất Thợ Cho Bạn</option>
-                        </optgroup>
-                        <optgroup label="Thợ tóc">
-                          {Array.isArray(ArrayUser) && ArrayUser.length > 0 ? (
-                            ArrayUser.map((staffItem, i) => (
-                              <option key={i} value={staffItem?.uid}>
-                                {staffItem?.name}
-                              </option>
-                            ))
-                          ) : (
-                            <option disabled>Không có dữ liệu</option>
-                          )}
-                        </optgroup>
-                      </Form.Select>
-                    </Form.Group>
                   </Row>
                   <Button variant="dark" type="submit" className="w-100">
                     Đặt lịch hẹn ngay!

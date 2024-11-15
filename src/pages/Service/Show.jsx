@@ -1,19 +1,21 @@
 import Header from "../../layouts/Header";
 import Footer from "../../layouts/Footer";
-import { Container, Row, Col, Button, Nav } from "react-bootstrap";
-import { NavLink, useParams } from "react-router-dom";
+import { Container, Row, Col, Button } from "react-bootstrap";
+import { useParams } from "react-router-dom";
 import { useState, useEffect, useRef } from "react";
 import { Helmet } from "react-helmet";
 import axios from "axios";
 import { Notyf } from "notyf";
 import "notyf/notyf.min.css";
+import { addToServiceCart } from "../../store/reducers/serviceCartSlice";
+import { useDispatch } from "react-redux";
 
 function Show() {
   const { slug } = useParams();
   const [ChiTietDV, setChiTietDV] = useState(null);
   const [cart, setCart] = useState([]);
-  const [bookingCount, setBookingCount] = useState(0); // State để theo dõi số lượng đặt lịch
   const notyf = useRef(new Notyf({ position: { x: "right", y: "top" } }));
+  const dispatch = useDispatch();
 
   useEffect(() => {
     const fetchChiTietDV = async () => {
@@ -40,21 +42,13 @@ function Show() {
     }
   }, []);
 
-  const addToCart = () => {
-    if (!ChiTietDV) return;
-
-    const existingItem = cart.find((item) => item.id === ChiTietDV.id);
-    const updatedCart = existingItem ? cart.map((item) => (item.id === ChiTietDV.id ? { ...item, quantity: item.quantity + 1 } : item)) : [...cart, { ...ChiTietDV, quantity: 1 }];
-
-    setCart(updatedCart);
-    localStorage.setItem("cart", JSON.stringify(updatedCart));
+  const handleAddToCart = () => {
+    console.log("cart running...");
     notyf.current.success("Đã thêm vào giỏ hàng!");
+    const newItem = { ...ChiTietDV, quantity: 1 };
+    dispatch(addToServiceCart(newItem));
   };
 
-  const handleDatLich = () => {
-    addToCart();
-    setBookingCount(bookingCount + 1); // Tăng số lượng đặt lịch khi nhấn "Đặt lịch"
-  };
   return (
     <>
       <Helmet>
@@ -78,22 +72,6 @@ function Show() {
                 }}
                 className="mx-auto"
               />
-              {/* <div className="d-flex justify-content-center mt-3">
-                {ChiTietDV?.gallery?.map((img, index) => (
-                  <img
-                    key={index}
-                    src={img}
-                    alt={`Hình ${index + 1}`}
-                    style={{
-                      width: "130px",
-                      height: "127px",
-                      objectFit: "cover",
-                      margin: "0 5px",
-                    }}
-                    className="mx-auto"
-                  />
-                ))}
-              </div> */}
             </div>
           </Col>
 
@@ -101,16 +79,10 @@ function Show() {
             <div className="border p-2">
               <div className="d-flex justify-content-between align-items-center">
                 <h4 className="text-danger fw-bold mb-0">{ChiTietDV ? ChiTietDV.name : "Tên dịch vụ"}</h4>
-                <Button variant="dark" onClick={handleDatLich}>
+                <Button variant="dark" onClick={handleAddToCart}>
                   Đặt lịch
                 </Button>
               </div>
-              {/* 
-              // <div className="mt-3">
-              //   <p>
-              //     Số lần đặt lịch: <span>{bookingCount}</span>
-              //   </p>
-              // </div> */}
               <div className="d-flex justify-content-between">
                 <p className="me-3 text-decoration-line-through">
                   {ChiTietDV
