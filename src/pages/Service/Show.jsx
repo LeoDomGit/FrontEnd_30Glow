@@ -7,6 +7,8 @@ import { Helmet } from "react-helmet";
 import axios from "axios";
 import { Notyf } from "notyf";
 import "notyf/notyf.min.css";
+import { addToServiceCart } from "../../store/reducers/serviceCartSlice";
+import { useSelector, useDispatch } from "react-redux";
 
 function Show() {
   const { slug } = useParams();
@@ -14,6 +16,7 @@ function Show() {
   const [cart, setCart] = useState([]);
   const [bookingCount, setBookingCount] = useState(0); // State để theo dõi số lượng đặt lịch
   const notyf = useRef(new Notyf({ position: { x: "right", y: "top" } }));
+  const dispatch = useDispatch();
 
   useEffect(() => {
     const fetchChiTietDV = async () => {
@@ -40,21 +43,13 @@ function Show() {
     }
   }, []);
 
-  const addToCart = () => {
-    if (!ChiTietDV) return;
-
-    const existingItem = cart.find((item) => item.id === ChiTietDV.id);
-    const updatedCart = existingItem ? cart.map((item) => (item.id === ChiTietDV.id ? { ...item, quantity: item.quantity + 1 } : item)) : [...cart, { ...ChiTietDV, quantity: 1 }];
-
-    setCart(updatedCart);
-    localStorage.setItem("cart", JSON.stringify(updatedCart));
+  const handleAddToCart = () => {
+    console.log("cart running...");
     notyf.current.success("Đã thêm vào giỏ hàng!");
+    const newItem = { ...ChiTietDV, quantity: 1 };
+    dispatch(addToServiceCart(newItem));
   };
 
-  const handleDatLich = () => {
-    addToCart();
-    setBookingCount(bookingCount + 1); // Tăng số lượng đặt lịch khi nhấn "Đặt lịch"
-  };
   return (
     <>
       <Helmet>
@@ -101,7 +96,7 @@ function Show() {
             <div className="border p-2">
               <div className="d-flex justify-content-between align-items-center">
                 <h4 className="text-danger fw-bold mb-0">{ChiTietDV ? ChiTietDV.name : "Tên dịch vụ"}</h4>
-                <Button variant="dark" onClick={handleDatLich}>
+                <Button variant="dark" onClick={handleAddToCart}>
                   Đặt lịch
                 </Button>
               </div>
@@ -115,18 +110,18 @@ function Show() {
                 <p className="me-3 text-decoration-line-through">
                   {ChiTietDV
                     ? ChiTietDV.compare_price.toLocaleString("vi-VN", {
-                        style: "currency",
-                        currency: "VND",
-                      })
+                      style: "currency",
+                      currency: "VND",
+                    })
                     : "..."}
                 </p>
                 <p className="fw-bold text-danger">
                   Tổng:{" "}
                   {ChiTietDV
                     ? ChiTietDV.price.toLocaleString("vi-VN", {
-                        style: "currency",
-                        currency: "VND",
-                      })
+                      style: "currency",
+                      currency: "VND",
+                    })
                     : "..."}
                 </p>
               </div>

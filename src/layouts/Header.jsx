@@ -12,6 +12,7 @@ function Header() {
   const [groupedCategories, setGroupedCategories] = useState({});
   const { user, logout } = useAuthenContext();
   const shoppingCart = useSelector((state) => state.shoppingCart.items);
+  const services = useSelector((state) => state.serviceCart.items);
 
   const isActive = (path) => location.pathname === path;
 
@@ -142,7 +143,7 @@ function Header() {
                   <Nav.Link as={NavLink} to="/dat-lich" className="col-6 d-md-none">
                     <Button variant="outline-primary" className="w-100">
                       <span className="me-2">Đặt lịch</span>
-                      <span class="badge text-bg-danger">4</span>
+                      <span class="badge text-bg-danger">{services ? services.length : 0}</span>
                     </Button>
                   </Nav.Link>
                   <Nav.Link as={NavLink} to="/gio-hang" className="col-6 d-md-none">
@@ -160,7 +161,7 @@ function Header() {
                 </Nav.Link>
                 <Nav.Link as={NavLink} to="/dat-lich" className="ms-1">
                   <i className="bi bi-calendar-check position-relative fs-5" title="Lịch đã đặt">
-                    <span className="position-absolute top-25 start-100 translate-middle badge rounded-pill bg-danger">9</span>
+                  <span className="position-absolute top-25 start-100 translate-middle badge rounded-pill bg-danger">{services ? services.length : 0}</span>
                   </i>
                 </Nav.Link>
                 <Nav.Link as={NavLink} to="/gio-hang" className="ms-1" title="Giỏ hàng">

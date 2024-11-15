@@ -1,6 +1,6 @@
 // eslint-disable-next-line no-unused-vars
 import React, { useEffect, useState } from "react";
-import { Container, Row, Col, Button, Table, Form } from "react-bootstrap";
+import { Container, Row, Col, Button, Table, Form, Image } from "react-bootstrap";
 import Header from "../../layouts/Header";
 import { useNavigate } from "react-router-dom";
 import Footer from "../../layouts/Footer";
@@ -8,6 +8,9 @@ import { Helmet } from "react-helmet";
 import { Notyf } from "notyf";
 import "notyf/notyf.min.css";
 import axios from "axios";
+import { increaseServiceQuantity, decreaseServiceQuantity, removeFromServiceCart } from "../../store/reducers/serviceCartSlice";
+import { useSelector, useDispatch } from "react-redux";
+
 
 function ServiceCart() {
   const notyf = new Notyf({
@@ -29,29 +32,37 @@ function ServiceCart() {
   const [time, setTime] = useState("");
   const [time2, setTime2] = useState("");
   const [errors, setErrors] = useState({});
+  //new 
+  const services = useSelector((state) => state.serviceCart.items);
+  const dispatch = useDispatch();
 
+  const handleQuantityChange = (id, change) => {
+    if (change > 0) {
+      dispatch(increaseServiceQuantity(id));
+    } else {
+      dispatch(decreaseServiceQuantity(id));
+    }
+  };
+
+  const handleRemoveService = (id) => {
+    dispatch(removeFromServiceCart(id));
+  };
+  const TongTien = () => {
+    const subtotal = services.reduce((sum, service) => sum + service.price * service.quantity, 0);
+    const shippingFee = subtotal > 500000 ? 0 : 30000;
+    const ThanhTien = subtotal + shippingFee;
+    setTotal(ThanhTien);
+  };
+  useEffect(() => {
+    TongTien();
+  }, [services]);
+  //
   useEffect(() => {
     const storedCarts = localStorage.getItem("cart");
     const cartData = storedCarts ? JSON.parse(storedCarts) : [];
     setCarts(cartData);
-    TongTien(cartData);
     GetAllStaff();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
-
-  const TongTien = (cart) => {
-    const ThanhTien = cart.reduce((acc, item) => acc + item.price, 0);
-    setTotal(ThanhTien);
-  };
-
-  const deleteItem = (id) => {
-    if (window.confirm("Bạn có chắc chắn muốn xóa sản phẩm này không?")) {
-      const updatedCarts = carts.filter((item) => item.id !== id);
-      setCarts(updatedCarts);
-      localStorage.setItem("cart", JSON.stringify(updatedCarts));
-      TongTien(updatedCarts);
-    }
-  };
 
   const validateForm = () => {
     const newErrors = {};
@@ -142,7 +153,6 @@ function ServiceCart() {
     }
   };
 
-
   return (
     <>
       <Helmet>
@@ -152,51 +162,46 @@ function ServiceCart() {
       <Header />
       <Container className="my-5 mb-5">
         <h4 className="mb-4">Đặt lịch của bạn</h4>
-        {carts.length === 0 ? (
+        {services.length === 0 ? (
           <h4 className="text-danger text-center">Bạn chưa có lịch hẹn nào </h4>
         ) : (
           <Row>
-            <Col md={7}>
-              <Table striped bordered hover>
-                <thead>
-                  <tr>
-                    <th className="text-center">Hình ảnh</th>
-                    <th>Sản phẩm</th>
-                    <th></th>
-                    <th>Thành Tiền</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {carts.map((item, index) => (
-                    <tr key={index}>
-                      <td className="d-flex justify-content-center align-items-center">
-                        <img
-                          src={item.image ? `${import.meta.env.VITE_URL}${item.image}` : "path/to/default-image.jpg"}
-                          style={{
-                            width: "100px",
-                            height: "100px",
-                            objectFit: "cover",
-                          }}
-                          alt={item.name}
-                        />
-                      </td>
-                      <td>{item.name}</td>
-                      <td>
-                        <Button variant="outline-danger" onClick={() => deleteItem(item.id)} className="ms-3">
-                          <i className="bi bi-trash" />
+            <Col md={7} className="border-end pt-1">
+              <h4>Giỏ hàng sản phẩm</h4>
+              <div className="overflow-auto" style={{ maxHeight: "380px" }}>
+                {services.map((item) => (
+                  <Row key={item.id} className="mb-3 align-items-center" style={{ width: "720px" }}>
+                    <Col xs={3}>
+                      <Image src={item.image ? `${import.meta.env.VITE_URL}${item.image}` : "path/to/default-image.jpg"} fluid rounded />
+                    </Col>
+                    <Col xs={5} className="text-start">
+                      <h6>{item?.name || "Product Name"}</h6>
+                      <div>
+                        <p className="mb-0">
+                          Giá gốc: <del>{Intl.NumberFormat("en-US").format(item.compare_price)}₫</del>
+                        </p>
+                        <p className="text-danger fw-bold">Giá giảm: {Intl.NumberFormat("en-US").format(item.price)}₫</p>
+                      </div>
+                    </Col>
+                    <Col xs={3}>
+                      <Form.Group className="d-flex align-items-center">
+                        <Button variant="outline-secondary" size="sm" onClick={() => handleQuantityChange(item.id, -1)} disabled={item.quantity === 1}>
+                          -
                         </Button>
-                      </td>
-                      <td>
-                        <span className="fw-bold">{Intl.NumberFormat("en-US").format(item.price)}</span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </Table>
-              <h4>
-                <strong style={{ color: "red" }}> Khi đặt lịch trước</strong> bạn sẽ được tặng
-                <span style={{ color: "green" }}> xịt dưỡng tóc Loreal</span>
-              </h4>
+                        <Form.Control type="text" readOnly value={item.quantity} className="text-center mx-2" style={{ width: "40px" }} />
+                        <Button variant="outline-secondary" size="sm" onClick={() => handleQuantityChange(item.id, 1)}>
+                          +
+                        </Button>
+                      </Form.Group>
+                    </Col>
+                    <Col xs={1} className="text-end">
+                      <Button variant="danger" size="sm" onClick={() => handleRemoveService(item.id)}>
+                        Xóa
+                      </Button>
+                    </Col>
+                  </Row>
+                ))}
+              </div>
             </Col>
             <Col md={5}>
               <div className="border" style={{ padding: "20px", borderRadius: "5px", width: "100%" }}>
