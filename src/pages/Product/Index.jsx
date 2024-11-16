@@ -1,4 +1,4 @@
-/* eslint-disable*/
+/* eslint-disable */
 import React, { useEffect, useState } from "react";
 import { Container, FormSelect } from "react-bootstrap";
 import { Card, Col, Row } from "react-bootstrap";
@@ -12,35 +12,25 @@ import axios from "axios";
 
 function Index() {
   const [filter, setFilter] = useState("default");
-
   const [products, setProducts] = useState([]);
   const [page, setPage] = useState(1);
   const [totalPage, setTotalPage] = useState(1);
   const [loading, setLoading] = useState(true);
-  // const [error, setError] = useState(null);
 
-  console.log(products);
-
-  const Product = async () => {
+  const fetchProducts = async () => {
     setLoading(true);
     try {
-      await axios
-        .get(import.meta.env.VITE_API_URL + "/products?page=" + page)
-        .then((res) => {
-          setProducts(res.data.data.data);
-          setTotalPage(res.data.data.last_page);
-          setPage(res.data.data.current_page);
-        })
-        .catch((err) => {
-          console.log(err);
-        })
-        .finally(() => {
-          setTimeout(() => {
-            setLoading(false);
-          }, 1000);
-        });
+      const response = await axios.get(`${import.meta.env.VITE_API_URL}/products?page=${page}`);
+      const data = response.data.data;
+      setProducts(data.data);
+      setTotalPage(data.last_page);
+      setPage(data.current_page);
     } catch (error) {
-      console.log(error);
+      console.error(error);
+    } finally {
+      setTimeout(() => {
+        setLoading(false);
+      }, 1000);
     }
   };
 
@@ -48,8 +38,28 @@ function Index() {
     setPage(newPage);
   };
 
+  const handleFilterChange = (e) => {
+    setFilter(e.target.value);
+  };
+
+  // Sắp xếp sản phẩm dựa trên giá trị bộ lọc
+  const getFilteredProducts = () => {
+    let sortedProducts = [...products];
+    
+    if (filter === "sale") {
+      sortedProducts = sortedProducts.filter((product) => product.discount > 0);
+    } else if (filter === "high-to-low") {
+      sortedProducts.sort((a, b) => b.price - a.price);
+    } else if (filter === "low-to-high") {
+      sortedProducts.sort((a, b) => a.price - b.price);
+    } else if (filter === "newest") {
+      sortedProducts.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    }
+    return sortedProducts;
+  };
+
   useEffect(() => {
-    Product();
+    fetchProducts();
   }, [page]);
 
   return (
@@ -69,11 +79,12 @@ function Index() {
           </div>
           <div className="d-flex align-items-center">
             <span className="me-2">Lọc:</span>
-            <FormSelect value={filter} onChange={(e) => setFilter(e.target.value)} style={{ width: "200px" }}>
+            <FormSelect value={filter} onChange={handleFilterChange} style={{ width: "200px" }}>
               <option value="default">Mặc định</option>
               <option value="high-to-low">Giá cao nhất</option>
               <option value="low-to-high">Giá thấp nhất</option>
               <option value="newest">Sản phẩm mới</option>
+              <option value="sale">Sản phẩm có sale</option> {/* Thêm tùy chọn Sale */}
             </FormSelect>
           </div>
         </div>
@@ -81,7 +92,11 @@ function Index() {
           <p>Đang tải sản phẩm...</p>
         ) : (
           <Row className="row-cols-1 row-cols-lg-5 g-4">
-            {products.length > 0 ? products.map((product, index) => <CardProduct key={index} {...product} />) : <h3 className="text-center">Không có sản phẩm</h3>}
+            {getFilteredProducts().length > 0 ? (
+              getFilteredProducts().map((product, index) => <CardProduct key={index} {...product} />)
+            ) : (
+              <h3 className="text-center">Không có sản phẩm</h3>
+            )}
           </Row>
         )}
         <Paginated current={page} total={totalPage} handle={handlePageChange} />
@@ -133,7 +148,6 @@ function Index() {
             </Card>
           </Col>
         </Row>
-        {/*end row*/}
       </Container>
       <Footers />
     </>

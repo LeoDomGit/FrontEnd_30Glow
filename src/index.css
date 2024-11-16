@@ -72,12 +72,10 @@ button:focus-visible {
   }
 } */
 .gradient {
-  background: linear-gradient(
-    to right,
-    #ff8983 17.85%,
-    #7f0e7f 53.28%,
-    #007a65 100%
-  );
+  background: linear-gradient(to right,
+      #ff8983 17.85%,
+      #7f0e7f 53.28%,
+      #007a65 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   text-fill-color: transparent;
@@ -157,4 +155,8 @@ button:focus-visible {
     transform: translateX(0) scale(1);
     background-position: 0% 0%;
   }
+}
+
+.dropdown-user::after {
+  display: none;
 }

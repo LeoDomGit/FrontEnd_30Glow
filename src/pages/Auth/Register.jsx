@@ -1,33 +1,21 @@
 // Register.js
-import React, { useState } from "react";
+import { useState } from "react";
 import Header from "../../layouts/Header";
 import Footer from "../../layouts/Footer";
 import { Container, Row, Col, Form, Button, InputGroup } from "react-bootstrap";
 import { Link, useNavigate } from "react-router-dom";
-import { Notyf } from "notyf";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
-import "notyf/notyf.min.css"; // Import CSS của Notyf
+import "notyf/notyf.min.css";
 import { Helmet } from "react-helmet";
+import axios from "axios";
 
 function Register() {
-  const notyf = new Notyf({
-    duration: 3000,
-    position: { x: "center", y: "top" },
-    dismissible: true,
-  });
-
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    phone: "",
-    password: "",
-    confirmPassword: "",
-  });
+  const [formData, setFormData] = useState({ name: "", email: "", phone: "", password: "", confirmPassword: "" });
 
   const [errors, setErrors] = useState({});
-  const [showPassword, setShowPassword] = useState(false); // Ẩn/hiện mật khẩu
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false); // Ẩn/hiện mật khẩu xác nhận
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const navigate = useNavigate();
 
   // Kiểm tra hợp lệ dữ liệu
@@ -36,7 +24,7 @@ function Register() {
 
     if (!formData.name.trim()) newErrors.name = "Tên tài khoản không được để trống!";
     if (!formData.email.trim()) newErrors.email = "Email không được để trống!";
-    if (!formData.phone.trim()) newErrors.phone = "Số điện thoại không được để trống!";
+    if (!formData.phone.trim()) newErrors.phone = "SĐT không được để trống!";
     if (!formData.password.trim()) newErrors.password = "Mật khẩu không được để trống!";
     if (!formData.confirmPassword.trim()) newErrors.confirmPassword = "Xác nhận mật khẩu không được để trống!";
 
@@ -46,7 +34,7 @@ function Register() {
     }
     const phoneRegex = /^0\d{9}$/;
     if (formData.phone && !phoneRegex.test(formData.phone)) {
-      newErrors.phone = "Số điện thoại phải có 10 số và bắt đầu bằng số 0!";
+      newErrors.phone = "SĐT phải có 10 số và bắt đầu bằng số 0!";
     }
     if (formData.password && formData.password.length < 8) {
       newErrors.password = "Mật khẩu phải có ít nhất 8 ký tự!";
@@ -58,23 +46,37 @@ function Register() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (validate()) {
-      notyf.success("Đăng ký thành công!");
-      setTimeout(() => navigate("/dang-nhap"), 2000); // Chuyển hướng sau 2 giây
+      await axios
+        .post(`${import.meta.env.VITE_API_URL}/register`, {
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          password: formData.password,
+          password_confirmation: formData.confirmPassword,
+        })
+        .then((response) => {
+          if (response.data.check === true) {
+            window.notyf.success("Đăng ký thành công!");
+            setFormData({ name: "", email: "", phone: "", password: "", confirmPassword: "" });
+            setTimeout(() => navigate("/dang-nhap"), 2000);
+          }
+        })
+        .catch((error) => {
+          window.notyf.error(error.response.data.message);
+        });
     } else {
-      notyf.error("Vui lòng kiểm tra và điền đúng thông tin!");
+      window.notyf.error("Vui lòng kiểm tra và điền đầy đủ thông tin!");
     }
   };
 
-  // Cập nhật state khi nhập dữ liệu
   const handleChange = (e) => {
     const { id, value } = e.target;
     setFormData({ ...formData, [id]: value });
   };
 
-  // Đổi trạng thái ẩn/hiện mật khẩu
   const togglePasswordVisibility = () => setShowPassword(!showPassword);
   const toggleConfirmPasswordVisibility = () => setShowConfirmPassword(!showConfirmPassword);
 
@@ -104,35 +106,17 @@ function Register() {
 
               <Form onSubmit={handleSubmit}>
                 <Form.Group className="mb-3" controlId="name">
-                  <Form.Control
-                    type="text"
-                    placeholder="Tên tài khoản"
-                    value={formData.name}
-                    onChange={handleChange}
-                    isInvalid={!!errors.name}
-                  />
+                  <Form.Control type="text" placeholder="Tên tài khoản" value={formData.name} onChange={handleChange} isInvalid={!!errors.name} />
                   <Form.Control.Feedback type="invalid">{errors.name}</Form.Control.Feedback>
                 </Form.Group>
 
                 <Form.Group className="mb-3" controlId="email">
-                  <Form.Control
-                    type="email"
-                    placeholder="Địa chỉ email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    isInvalid={!!errors.email}
-                  />
+                  <Form.Control type="email" placeholder="Địa chỉ email" value={formData.email} onChange={handleChange} isInvalid={!!errors.email} />
                   <Form.Control.Feedback type="invalid">{errors.email}</Form.Control.Feedback>
                 </Form.Group>
 
                 <Form.Group className="mb-3" controlId="phone">
-                  <Form.Control
-                    type="text"
-                    placeholder="Số điện thoại"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    isInvalid={!!errors.phone}
-                  />
+                  <Form.Control type="text" placeholder="Số điện thoại" value={formData.phone} onChange={handleChange} isInvalid={!!errors.phone} />
                   <Form.Control.Feedback type="invalid">{errors.phone}</Form.Control.Feedback>
                 </Form.Group>
 
@@ -144,6 +128,7 @@ function Register() {
                       value={formData.password}
                       onChange={handleChange}
                       isInvalid={!!errors.password}
+                      autoComplete={"off"}
                     />
                     <Button variant="outline-secondary rounded-end" onClick={togglePasswordVisibility}>
                       <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} />

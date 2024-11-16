@@ -10,7 +10,7 @@ import { Helmet } from "react-helmet";
 function Forgot() {
   const notyf = new Notyf({
     duration: 3000,
-    position: { x: "center", y: "top" },
+    position: { x: "right", y: "top" },
     dismissible: true,
   });
 

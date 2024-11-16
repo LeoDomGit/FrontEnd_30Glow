@@ -1,6 +1,7 @@
 /* eslint-disable*/
 import axios from "axios";
 import React, { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 
 function Footer() {
   return (
@@ -15,24 +16,24 @@ function Footer() {
                   <img src="../src/assets/images/logo30GLOW.png" width={100} className="logo-img mb-3" alt="" />
                   <h5 className="mb-3 fw-bold">Về chúng tôi</h5>
                   <p className="mb-2">Chúng tôi không chỉ là nơi bạn có thể đặt lịch làm tóc để có mái tóc đẹp tự tin, mà còn là địa điểm tuyệt vời để khám phá các sản phẩm chăm sóc tóc và da mặt.</p>
-                  <a className="link-dark">Đọc thêm</a>
+                  <Link className="link-dark" to={"/gioi-thieu"}>Đọc thêm</Link>
                 </div>
               </div>
               <div className="col">
                 <div className="footer-widget-7">
                   <h5 className="mb-3 fw-bold">Cửa hàng</h5>
                   <ul className="widget-link list-unstyled">
-                    <li>
-                      <a>Fashion</a>
+                  <li>
+                      <Link className="link-dark text-decoration-none" to={"/"}>Trang chủ</Link>
                     </li>
                     <li>
-                      <a>Women</a>
+                      <Link className="link-dark text-decoration-none" to={"/san-pham"}>Sản phẩm</Link>
                     </li>
                     <li>
-                      <a>Furniture</a>
+                      <Link className="link-dark text-decoration-none" to={"/dich-vu"}>Dịch vụ</Link>
                     </li>
                     <li>
-                      <a>Shoes</a>
+                      <Link className="link-dark text-decoration-none" to={"/thuong-hieu"}>Thương hiệu</Link>
                     </li>
                   </ul>
                 </div>
@@ -42,16 +43,13 @@ function Footer() {
                   <h5 className="mb-3 fw-bold">Thông tin</h5>
                   <ul className="widget-link list-unstyled">
                     <li>
-                      <a>About Us</a>
+                      <Link className="link-dark text-decoration-none" to={"/gioi-thieu"}>Giới thiệu</Link >
                     </li>
                     <li>
-                      <a>Contact Us</a>
+                      <Link className="link-dark text-decoration-none" to={"/lien-he"}>Liên hệ</Link >
                     </li>
                     <li>
-                      <a>FAQ</a>
-                    </li>
-                    <li>
-                      <a>Privacy</a>
+                      <Link className="link-dark text-decoration-none" to={"/tin-tuc"}>Tin tức</Link >
                     </li>
                   </ul>
                 </div>

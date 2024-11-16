@@ -1,66 +1,48 @@
-// Login.js
-import React, { useState } from "react";
+import { useState } from "react";
 import Header from "../../layouts/Header";
 import Footer from "../../layouts/Footer";
 import { Container, Row, Col, Form, Button, InputGroup } from "react-bootstrap";
-import { Link, useNavigate } from "react-router-dom";
-import { Notyf } from "notyf";
+import { Link } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
-import "notyf/notyf.min.css";
 import { Helmet } from "react-helmet";
+import useAuthenContext from "../../context/AuthenContext";
 
 function Login() {
-  const notyf = new Notyf({
-    duration: 3000,
-    position: { x: "center", y: "top" },
-    dismissible: true,
-  });
-
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
-
+  const [formData, setFormData] = useState({ email: "", password: "", rememberToken: false });
   const [errors, setErrors] = useState({});
-  const [showPassword, setShowPassword] = useState(false); // State cho việc ẩn/hiện mật khẩu
-  const navigate = useNavigate();
+  const [showPassword, setShowPassword] = useState(false);
+  const { login } = useAuthenContext();
 
   const validate = () => {
     let newErrors = {};
-
     if (!formData.email.trim()) newErrors.email = "Email không được để trống!";
     if (!formData.password.trim()) newErrors.password = "Mật khẩu không được để trống!";
-
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (formData.email && !emailRegex.test(formData.email)) {
       newErrors.email = "Email không hợp lệ!";
     }
-
     if (formData.password && formData.password.length < 8) {
       newErrors.password = "Mật khẩu phải có ít nhất 8 ký tự!";
     }
-
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
-  const handleSubmit = (e) => {
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (validate()) {
-      notyf.success("Đăng nhập thành công!");
-      setTimeout(() => navigate("/"), 2000); // Chuyển hướng sau 2 giây
+      await login({ email: formData.email, password: formData.password, remember_token: formData.rememberToken });
     } else {
-      notyf.error("Vui lòng kiểm tra thông tin đăng nhập!");
+      window.notyf.error("Vui lòng kiểm tra thông tin đăng nhập!");
     }
   };
 
-  // Cập nhật state khi người dùng nhập dữ liệu
   const handleChange = (e) => {
     const { id, value } = e.target;
     setFormData({ ...formData, [id]: value });
   };
 
-  // Đổi trạng thái ẩn/hiện mật khẩu
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
   };
@@ -79,34 +61,22 @@ function Login() {
               <h3 className="text-center mb-4 text-primary-emphasis">Đăng nhập</h3>
               <Form onSubmit={handleSubmit}>
                 <Form.Group className="mb-3" controlId="email">
-                  <Form.Control
-                    type="email"
-                    placeholder="Địa chỉ email"
-                    value={formData.email}
-                    onChange={handleChange}
-                    isInvalid={!!errors.email}
-                  />
+                  <Form.Control type="email" placeholder="Địa chỉ email" value={formData.email} onChange={handleChange} isInvalid={!!errors.email} />
                   <Form.Control.Feedback type="invalid">{errors.email}</Form.Control.Feedback>
                 </Form.Group>
 
                 <Form.Group className="mb-3" controlId="password">
                   <InputGroup>
-                    <Form.Control
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Nhập mật khẩu"
-                      value={formData.password}
-                      onChange={handleChange}
-                      isInvalid={!!errors.password}
-                    />
+                    <Form.Control type={showPassword ? "text" : "password"} placeholder="Nhập mật khẩu" value={formData.password} onChange={handleChange} isInvalid={!!errors.password} />
                     <Button variant="outline-secondary rounded-end" onClick={togglePasswordVisibility}>
-                      <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye}/>
+                      <FontAwesomeIcon icon={showPassword ? faEyeSlash : faEye} />
                     </Button>
                     <Form.Control.Feedback type="invalid">{errors.password}</Form.Control.Feedback>
                   </InputGroup>
                 </Form.Group>
 
                 <Form.Group className="mb-2" controlId="formCheckbox">
-                  <Form.Check type="checkbox" label="Ghi nhớ" />
+                  <Form.Check type="checkbox" label="Ghi nhớ" checked={formData.rememberToken} onChange={(e) => setFormData({ ...formData, rememberToken: e.target.checked })} />
                 </Form.Group>
 
                 <Link to="/quen-mat-khau" className="text-decoration-none text-danger me-2">
